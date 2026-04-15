@@ -56,6 +56,33 @@ When a subscription line crosses a threshold, it grows a marker:
 `⚡` at 70% (watch), `⚠️` at 85% (close), `🔴` at 95% (critical).
 Thresholds are configurable.
 
+## Why this matters
+
+Picture a person who doesn't know what time it is, whether it's
+morning or evening, how long the conversation has been running, or
+how much energy is left. They may be intelligent, but they cannot
+be apt — there's nothing to orient against.
+
+An LLM agent, by default, is exactly that. Every reply is
+assembled from a vacuum, with no reference to the situation.
+Giving it a clock, a sense of "how long I've been working," and
+"how much budget is left" isn't cosmetic — it promotes a text
+generator into a companion capable of reading the moment.
+
+What then becomes possible:
+
+- adapting tone to time of day,
+- warning the user that the 5-hour subscription is nearing the
+  limit — while there's still room to land the task cleanly,
+- noticing the context is filling up and suggesting `/clear` or
+  narrowing scope — before compaction lops off working memory,
+- sensing the conversation is stuck and shifting approach.
+
+Each of these behaviors has to live in the agent's own
+instructions — the status block only supplies the data. But
+without that data they're flatly impossible: the signal never
+reaches the model.
+
 ## Quick start
 
 > Requires: `bash`, `jq`, `awk`, `date`, `printf`.
@@ -146,33 +173,6 @@ Design decisions worth knowing:
   the last `usage` record in the transcript; during a tool-heavy turn
   it lags by one step. Good enough for "am I approaching the window"
   decisions, not good enough for precise budgeting.
-
-## Why this matters
-
-Picture a person who doesn't know what time it is, whether it's
-morning or evening, how long the conversation has been running, or
-how much energy is left. They may be intelligent, but they cannot
-be apt — there's nothing to orient against.
-
-An LLM agent, by default, is exactly that. Every reply is
-assembled from a vacuum, with no reference to the situation.
-Giving it a clock, a sense of "how long I've been working," and
-"how much budget is left" isn't cosmetic — it promotes a text
-generator into a companion capable of reading the moment.
-
-What then becomes possible:
-
-- adapting tone to time of day,
-- warning the user that the 5-hour subscription is nearing the
-  limit — while there's still room to land the task cleanly,
-- noticing the context is filling up and suggesting `/clear` or
-  narrowing scope — before compaction lops off working memory,
-- sensing the conversation is stuck and shifting approach.
-
-Each of these behaviors has to live in the agent's own
-instructions — the status block only supplies the data. But
-without that data they're flatly impossible: the signal never
-reaches the model.
 
 ## License
 
