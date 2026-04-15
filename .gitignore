@@ -1,0 +1,17 @@
+# macOS
+.DS_Store
+._*
+
+# Editor swap / backup files
+*~
+*.swp
+*.bak
+*.bak.*
+
+# Runtime state (written by statusline-state-writer.sh at $HOME, not in repo;
+# ignore accidental copies / test runs landing next to the scripts)
+state.json
+config.env
+
+# Local test artifacts
+/tmp/
