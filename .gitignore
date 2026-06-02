@@ -19,3 +19,8 @@ config.env
 # Claude Code working files — keep out of this public repo
 CLAUDE.md
 .claude/
+
+# Agent / runtime session artifacts — local only, never in the public repo
+AGENTS.md
+.codex/
+.iapeer/

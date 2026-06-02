@@ -1,0 +1,33 @@
+{
+  "name": "statusline-injector",
+  "version": "0.0.0",
+  "description": "Инжектит агенту его собственный живой статус в контекст на каждом ходу: время, лимиты подписки 5h/7d, заполнение окна контекста. Одна минимальная строка. Работает в Claude Code и Codex CLI без ручных шагов.",
+  "author": {
+    "name": "agfpd",
+    "url": "https://github.com/agfpd"
+  },
+  "homepage": "https://github.com/agfpd/statusline-injector",
+  "repository": "https://github.com/agfpd/statusline-injector",
+  "license": "MIT",
+  "keywords": [
+    "claude-code",
+    "codex",
+    "statusline",
+    "context-window",
+    "rate-limits",
+    "hooks",
+    "iapeer",
+    "observability"
+  ],
+  "hooks": "./hooks/hooks.json",
+  "interface": {
+    "displayName": "Statusline Injector",
+    "shortDescription": "Живой статус агента (время, лимиты, контекст) в контекст каждого хода",
+    "longDescription": "На каждом ходу инжектит агенту одну минимальную строку статуса — системное время с TZ, расход лимитов подписки 5h/7d и заполнение окна контекста (число/окно). Claude: обёртка statusLine ловит лимиты из stdin harness, инжект через UserPromptSubmit hook. Codex: лимиты и контекст из роллаута (token_count), инжект через тот же UserPromptSubmit hook, без обёртки. Plug-and-play: ставится без ручных шагов в обоих рантаймах.",
+    "developerName": "agfpd",
+    "category": "Productivity",
+    "capabilities": [],
+    "websiteURL": "https://github.com/agfpd/statusline-injector",
+    "brandColor": "#2D6A6A"
+  }
+}
