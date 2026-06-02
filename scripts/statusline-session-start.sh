@@ -146,4 +146,45 @@ jq \
   && mv -f "$TMP" "$P" 2>/dev/null \
   || rm -f "$TMP" 2>/dev/null
 
+# --- Activator: dodge the statusLine init-race. -----------------------------
+# Claude Code resolves statusLine.command at session start; the wrap written
+# just above (during SessionStart) can land before Claude's settings watcher is
+# ready, so the current session keeps the PRE-wrap statusLine and the wrapper
+# never runs (no state file → injector shows time+ctx but no 5h/7d). Claude DOES
+# hot-reload statusLine on a mid-session settings change (verified live), so a
+# detached task — running after the watcher is up — re-touches settings to force
+# that reload, activating the wrapper THIS session. Idempotent, self-stopping
+# (exits once a state file proves the wrapper ran), and leaves .command pristine.
+# The persisted wrap above is the fallback: the NEXT session reads it at init.
+SID=$(printf '%s' "$HOOK_INPUT" | jq -r '.session_id // empty' 2>/dev/null || true)
+if [ -n "$SID" ]; then
+  STATE_FILE="$STATUSLINE_STATE_DIR/state-$SID.json"
+  TRIES="${STATUSLINE_ACTIVATE_TRIES:-12}"
+  INTERVAL="${STATUSLINE_ACTIVATE_INTERVAL:-4}"
+  (
+    i=0
+    while [ "$i" -lt "$TRIES" ]; do
+      sleep "$INTERVAL"
+      [ -f "$STATE_FILE" ] && break   # wrapper ran — activated
+      # Force a .statusLine.command content change (toggle a harmless trailing
+      # shell comment) → settings-change event → hot-reload → wrapper picked up.
+      t=$(mktemp "$PROJECT_DIR/.claude/.settings.XXXXXX" 2>/dev/null) || { i=$((i+1)); continue; }
+      jq --arg n "$i" '
+        if (.statusLine._statuslineInjectorWrapped == true) then
+          .statusLine.command = ((.statusLine.command | sub(" #sli:[0-9]+$"; "")) + " #sli:" + $n)
+        else . end
+      ' "$P" > "$t" 2>/dev/null && mv -f "$t" "$P" 2>/dev/null || rm -f "$t" 2>/dev/null
+      i=$((i+1))
+    done
+    # Strip the touch comment so .command is left pristine either way.
+    t=$(mktemp "$PROJECT_DIR/.claude/.settings.XXXXXX" 2>/dev/null) || exit 0
+    jq '
+      if (.statusLine._statuslineInjectorWrapped == true) then
+        .statusLine.command |= sub(" #sli:[0-9]+$"; "")
+      else . end
+    ' "$P" > "$t" 2>/dev/null && mv -f "$t" "$P" 2>/dev/null || rm -f "$t" 2>/dev/null
+  ) >/dev/null 2>&1 </dev/null &
+  disown 2>/dev/null || true
+fi
+
 exit 0
