@@ -82,10 +82,10 @@ codex plugin add statusline-injector@agfpd
 ```
 
 Restart the session (or `/reload-plugins` in interactive Claude Code) and the
-line starts appearing on every turn.
-
-To try it without installing, dev-load it for one session:
-`claude --plugin-dir /path/to/statusline-injector`.
+line starts appearing on every turn. To try it out, install at project scope as
+above and, if you decide against it, run the [`statusline-uninstall`](#uninstall)
+skill — the whole loop is reversible and touches nothing but the `statusLine`
+command string.
 
 > Requires `jq` on `PATH`. macOS: `brew install jq`. Debian/Ubuntu:
 > `apt install jq`. If `jq` is missing the plugin degrades silently — it never
@@ -155,6 +155,18 @@ even if the plugin is removed without reverting.
 - **Not accurate to the token.** Context lags by one step during a tool-heavy
   turn — good enough for "am I approaching the window," not for precise
   budgeting.
+
+## Development
+
+For hacking on the plugin itself, dev-load it from a checkout for one session
+(no install, reverts when the session ends):
+
+```sh
+claude --plugin-dir /path/to/statusline-injector
+```
+
+Release is one cloud command — `./scripts/release.sh [patch|minor|major]` bumps
+both manifests, tags, pushes, and updates the `agfpd` marketplace.
 
 ## License
 
