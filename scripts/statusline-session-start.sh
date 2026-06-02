@@ -26,16 +26,26 @@
 set -u
 export LC_ALL=C
 
-# --- Claude-only gate. Codex sets neither of these; bail clean there. ---
+command -v jq >/dev/null 2>&1 || exit 0
+
+# Drain stdin (session_id, cwd, transcript_path, …).
+HOOK_INPUT=""
+if [ ! -t 0 ]; then HOOK_INPUT=$(cat 2>/dev/null || true); fi
+
+# --- Codex bail. Codex has no statusLine channel, so the wrap is meaningless
+#     there. Detect Codex by its SessionStart transcript_path (the session
+#     rollout, rollout-*.jsonl) and no-op — robust even if a future Codex
+#     exports CLAUDE_* vars. ---
+SS_TPATH=$(printf '%s' "$HOOK_INPUT" | jq -r '.transcript_path // empty' 2>/dev/null || true)
+case "$(basename "$SS_TPATH" 2>/dev/null)" in
+  rollout-*.jsonl) exit 0 ;;
+esac
+
+# --- Claude-only gate. Without a Claude project/plugin root there is nothing to
+#     wrap (and no Codex marker above means an unknown runtime — bail). ---
 if [ -z "${CLAUDE_PROJECT_DIR:-}" ] && [ -z "${CLAUDE_PLUGIN_ROOT:-}" ]; then
   exit 0
 fi
-
-command -v jq >/dev/null 2>&1 || exit 0
-
-# Drain stdin (session_id, cwd, …) — not required, but keep the pipe clean.
-HOOK_INPUT=""
-if [ ! -t 0 ]; then HOOK_INPUT=$(cat 2>/dev/null || true); fi
 
 ROOT="${CLAUDE_PLUGIN_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." 2>/dev/null && pwd)}"
 : "${STATUSLINE_STATE_DIR:=$HOME/.claude/statusline-injector}"

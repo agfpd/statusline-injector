@@ -131,17 +131,21 @@ SL_WARN_PCT=80
 
 ## Uninstall
 
-Claude wrapping is fully reversible:
+The Claude statusLine wrap is fully reversible. Ask the agent to "uninstall
+statusline-injector" or "revert the statusline wrap" — the bundled
+`statusline-uninstall` skill (works in both runtimes) restores your original
+statusLine. Or run the script directly:
 
 ```
-/statusline-uninstall                       # in an interactive Claude session
-# or:
 bash "$CLAUDE_PLUGIN_ROOT/scripts/statusline-uninstall.sh" [settings.json]
 ```
 
-This restores the original statusLine (or removes our entry so the harness
-falls back to the untouched user-scope one). Then remove the plugin itself with
-`claude plugin uninstall statusline-injector` / `codex plugin remove`.
+It restores the original statusLine (or removes our entry so the harness falls
+back to the untouched user-scope one). Codex uses no wrapper, so there is
+nothing to revert there. Then remove the plugin itself with
+`claude plugin uninstall statusline-injector` / `codex plugin remove`. The wrap
+is self-degrading anyway — the wrapper keeps your original statusLine working
+even if the plugin is removed without reverting.
 
 ## What this is NOT
 

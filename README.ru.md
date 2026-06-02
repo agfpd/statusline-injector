@@ -124,17 +124,20 @@ SL_WARN_PCT=80
 
 ## Удаление
 
-Обёртка Claude полностью обратима:
+Обёртка Claude полностью обратима. Попросите агента «uninstall
+statusline-injector» или «revert the statusline wrap» — встроенный скилл
+`statusline-uninstall` (работает в обоих рантаймах) восстановит оригинальный
+statusLine. Либо запустите скрипт напрямую:
 
 ```
-/statusline-uninstall                       # в интерактивной сессии Claude
-# или:
 bash "$CLAUDE_PLUGIN_ROOT/scripts/statusline-uninstall.sh" [settings.json]
 ```
 
-Это восстанавливает оригинальный statusLine (или убирает нашу строку, чтобы
-харнес сам упал на нетронутый user-scope). Затем уберите сам плагин:
-`claude plugin uninstall statusline-injector` / `codex plugin remove`.
+Он восстанавливает оригинальный statusLine (или убирает нашу строку, чтобы
+харнес сам упал на нетронутый user-scope). В Codex обёртки нет — там реверту
+нечего. Затем уберите сам плагин: `claude plugin uninstall statusline-injector`
+/ `codex plugin remove`. Обёртка к тому же само-деградирует — она продолжает
+отдавать ваш оригинальный statusLine, даже если плагин удалён без реверта.
 
 ## Чем это НЕ является
 

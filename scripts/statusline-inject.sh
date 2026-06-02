@@ -43,11 +43,20 @@ SL_CTX_USED=""; SL_CTX_WIN=""
 SL_RL5=""; SL_RL5_RESET=""; SL_RL7=""; SL_RL7_RESET=""
 
 # --- runtime detection (multi-signal, best-effort) ---
+# The most reliable signal is the transcript filename: Codex passes the session
+# rollout (rollout-*.jsonl), Claude passes a <uuid>.jsonl under .claude/projects.
+# Filename beats path/env because the Codex rollout may live outside ~/.codex
+# (custom CODEX_HOME) and Codex may also export CLAUDE_PLUGIN_ROOT.
 RUNTIME=""
-case "$TPATH" in
-  */.codex/*)  RUNTIME="codex" ;;
-  */.claude/*) RUNTIME="claude" ;;
+case "$(basename "$TPATH" 2>/dev/null)" in
+  rollout-*.jsonl) RUNTIME="codex" ;;
 esac
+if [ -z "$RUNTIME" ]; then
+  case "$TPATH" in
+    */.codex/*)  RUNTIME="codex" ;;
+    */.claude/*) RUNTIME="claude" ;;
+  esac
+fi
 if [ -z "$RUNTIME" ]; then
   if [ -n "${PLUGIN_ROOT:-}" ] && [ -z "${CLAUDE_PLUGIN_ROOT:-}" ]; then
     RUNTIME="codex"
@@ -163,6 +172,7 @@ fi
 
 # Optional debug trace for live verification.
 if [ -n "${STATUSLINE_DEBUG:-}" ]; then
+  mkdir -p "$STATUSLINE_STATE_DIR" 2>/dev/null || true
   printf '%s rt=%s sid=%s ctx=%s/%s 5h=%s 7d=%s tpath=%s cwd=%s\n' \
     "$(date '+%H:%M:%S')" "$RUNTIME" "$SID" "$SL_CTX_USED" "$SL_CTX_WIN" \
     "$SL_RL5" "$SL_RL7" "$TPATH" "$CWD" >> "$STATUSLINE_STATE_DIR/inject-debug.log" 2>/dev/null || true
