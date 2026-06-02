@@ -156,18 +156,6 @@ even if the plugin is removed without reverting.
   turn — good enough for "am I approaching the window," not for precise
   budgeting.
 
-## Development
-
-For hacking on the plugin itself, dev-load it from a checkout for one session
-(no install, reverts when the session ends):
-
-```sh
-claude --plugin-dir /path/to/statusline-injector
-```
-
-Release is one cloud command — `./scripts/release.sh [patch|minor|major]` bumps
-both manifests, tags, pushes, and updates the `agfpd` marketplace.
-
 ## License
 
 MIT. See [LICENSE](./LICENSE).

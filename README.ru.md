@@ -147,18 +147,6 @@ bash "$CLAUDE_PLUGIN_ROOT/scripts/statusline-uninstall.sh" [settings.json]
 - **Не точно до токена.** Контекст отстаёт на один шаг во время tool-heavy хода —
   достаточно для «приближаюсь ли к окну», но не для точного бюджетирования.
 
-## Разработка
-
-Для работы над самим плагином — dev-загрузка из чекаута на одну сессию (без
-установки, откатывается по завершении сессии):
-
-```sh
-claude --plugin-dir /path/to/statusline-injector
-```
-
-Релиз — одна облачная команда: `./scripts/release.sh [patch|minor|major]` бампит
-оба манифеста, ставит тег, пушит и обновляет marketplace `agfpd`.
-
 ## Лицензия
 
 MIT. См. [LICENSE](./LICENSE).

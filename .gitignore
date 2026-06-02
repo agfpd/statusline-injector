@@ -24,3 +24,7 @@ CLAUDE.md
 AGENTS.md
 .codex/
 .iapeer/
+
+# Maintainer-only release tooling — not part of the public plugin
+scripts/release.sh
+scripts/bump-marketplace.cjs
