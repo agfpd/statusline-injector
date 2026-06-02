@@ -2,7 +2,7 @@
 
 # statusline-injector
 
-> A plug-and-play plugin for **Claude Code** and **Codex CLI** that injects an
+> A drop-in plugin for **Claude Code** and **Codex CLI** that injects an
 > agent's own live status into its context on every turn — system time, the
 > 5h/7d subscription limits, and how full the context window is — as one
 > minimal line.
@@ -16,8 +16,8 @@ By default an LLM agent has no idea
 - how full its context window already is,
 - how close its Pro/Max (or ChatGPT) subscription is to the 5-hour or 7-day reset.
 
-The harness knows all of this. The agent does not — unless it is put into the
-context explicitly. The result is predictable: the agent plans as if time were
+The harness knows all of this. The agent does not — unless that information is explicitly placed in
+its context. The result is predictable: the agent plans as if time were
 infinite, keeps loading material into a context that is already 85% full, and
 is surprised when a long task dies mid-flight because the 5-hour window just
 snapped shut.
@@ -30,8 +30,8 @@ One line, at the top of every turn:
 [st 14:30+03 · ctx 70k/200k · 5h 42% · 7d 18%]
 ```
 
-When a limit nears its threshold, that window expands with its reset time and a
-marker — and only then:
+When a limit nears its threshold, its segment expands to show the reset time
+and a marker — and only then:
 
 ```
 [st 14:30+03 · ctx 188k/200k · 5h 92%→19:00 ⚠️ · 7d 18%]
@@ -82,10 +82,9 @@ codex plugin add statusline-injector@agfpd
 ```
 
 Restart the session (or `/reload-plugins` in interactive Claude Code) and the
-line starts appearing on every turn. To try it out, install at project scope as
-above and, if you decide against it, run the [`statusline-uninstall`](#uninstall)
-skill — the whole loop is reversible and touches nothing but the `statusLine`
-command string.
+line starts appearing on every turn. Project scope keeps it easy to try: if you
+decide against it, the [`statusline-uninstall`](#uninstall) skill reverses the
+whole loop — it touches nothing but the `statusLine` command string.
 
 > Requires `jq` on `PATH`. macOS: `brew install jq`. Debian/Ubuntu:
 > `apt install jq`. If `jq` is missing the plugin degrades silently — it never
