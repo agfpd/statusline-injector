@@ -110,30 +110,67 @@ if [ -f "$U" ]; then
 fi
 
 # --- idempotent wrap (the 3-point algorithm above) ---
+# Self-wrap detection is CONTENT-based, not marker-only: the marker keys
+# (_statuslineInjector*) can be stripped by external settings rewrites (the
+# harness itself rewrites project settings.json for enabledPlugins etc. and
+# normalizes statusLine to its schema). A wrapped command that lost its marker
+# must still be recognized as ours and unwrapped to the true original —
+# otherwise every re-run nests one more level and the stash is poisoned with a
+# wrap (the 2026-06 fleet incident: up to 5 nested levels). sli_unwrap reverses
+# the exact construction below (wrapper path + " " + @sh(inner)), level by
+# level; sli_orig applies it to whole statusLine objects, following stash
+# chains. Keep these defs in sync with statusline-uninstall.sh.
+SLI_JQ_DEFS=""
+read -r -d '' SLI_JQ_DEFS <<'JQDEFS' || true
+  def sli_strip: sub("\\s*#sli:[0-9]+$"; "");
+  def sli_unq:
+    if (length >= 2 and startswith("'") and endswith("'"))
+    then (.[1:-1] | gsub("'\\\\''"; "'"))
+    else . end;
+  def sli_ours:
+    . == $w or startswith($w + " ")
+    or test("^[^ ]*statusline-injector/wrapper\\.sh( |$)")
+    or test("^[^ ]*/statusline-wrapper\\.sh( |$)");
+  def sli_unwrap:
+    sli_strip
+    | until((sli_ours | not);
+        if contains(" ") then (sub("^[^ ]+ +"; "") | sli_unq | sli_strip)
+        else "" end);
+  def sli_clean:
+    del(._statuslineInjectorWrapped, ._statuslineInjectorOriginal,
+        ._statuslineInjectorOriginalSource);
+  def sli_orig:
+    if . == null then null
+    elif (._statuslineInjectorWrapped == true
+          and ._statuslineInjectorOriginal != null) then
+      (._statuslineInjectorOriginal | sli_orig)
+    else
+      (((.command // "") | sli_unwrap) as $c
+       | if $c == "" then null else (sli_clean | .command = $c) end)
+    end;
+JQDEFS
+
 TMP=$(mktemp "$PROJECT_DIR/.claude/.settings.XXXXXX" 2>/dev/null || true)
 [ -n "$TMP" ] || exit 0
 
 jq \
   --arg w "$WRAPPER" \
   --argjson u "$USER_ST" \
-  '
+  "$SLI_JQ_DEFS"'
   .statusLine as $cur
+  | ($u | sli_orig) as $uo
   | (
-      if ($cur != null and $cur._statuslineInjectorWrapped == true) then
-        if ($cur._statuslineInjectorOriginalSource == "project") then
-          { obj: $cur._statuslineInjectorOriginal, src: "project" }
-        elif ($u != null and (($u.command // "") != "")) then
-          { obj: $u, src: "user" }
+      ( if ($cur != null and $cur._statuslineInjectorWrapped == true) then
+          ( if ($cur._statuslineInjectorOriginalSource == "project")
+            then ($cur._statuslineInjectorOriginal | sli_orig)
+            else null end )
         else
-          { obj: null, src: "none" }
+          ($cur | sli_orig)
+        end ) as $po
+      | if $po != null then { obj: $po, src: "project" }
+        elif $uo != null then { obj: $uo, src: "user" }
+        else { obj: null, src: "none" }
         end
-      elif ($cur != null and (($cur.command // "") != "")) then
-        { obj: $cur, src: "project" }
-      elif ($u != null and (($u.command // "") != "")) then
-        { obj: $u, src: "user" }
-      else
-        { obj: null, src: "none" }
-      end
     ) as $o
   | .statusLine = {
       type: "command",
@@ -143,7 +180,8 @@ jq \
       _statuslineInjectorOriginal: (if $o.src == "project" then $o.obj else null end)
     }
   ' "$P" > "$TMP" 2>/dev/null \
-  && mv -f "$TMP" "$P" 2>/dev/null \
+  && { if cmp -s "$TMP" "$P" 2>/dev/null; then rm -f "$TMP" 2>/dev/null
+       else mv -f "$TMP" "$P" 2>/dev/null; fi; } \
   || rm -f "$TMP" 2>/dev/null
 
 # --- Activator: dodge the statusLine init-race. -----------------------------
