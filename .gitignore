@@ -24,6 +24,7 @@ CLAUDE.md
 AGENTS.md
 .codex/
 .iapeer/
+.mcp.json
 
 # Maintainer-only release tooling — not part of the public plugin
 scripts/release.sh
