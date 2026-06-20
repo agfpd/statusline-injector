@@ -70,7 +70,7 @@ fi
 
 # --- Claude: state file (+ transcript fallback for context) ---
 gather_claude() {
-  local state model li lr lc usage
+  local state li lr lc usage
   state="$STATUSLINE_STATE_DIR/state${SID:+-$SID}.json"
   [ -f "$state" ] || state="$STATUSLINE_STATE_DIR/state.json"
   if [ -f "$state" ]; then
@@ -91,14 +91,12 @@ gather_claude() {
       SL_CTX_USED=$(( li + lr + lc ))
     fi
   fi
-  # Window fallback: derive from the (possibly suffixed) model id, default 200k.
+  # Window fallback: default 200k when the window size is unknown (e.g. state not
+  # yet written this session). Modern Claude (>= v2.1.132) delivers
+  # context_window_size directly in the statusLine blob — 200000 or 1000000 — so
+  # the real size (incl. 1m models) comes from $state above, not from here.
   if [ -z "$SL_CTX_WIN" ]; then
-    model=""
-    [ -f "$state" ] && model=$(jq -r '.model.id // empty' "$state" 2>/dev/null || true)
-    case "$model" in
-      *"[1m]"*|*"-1m"*) SL_CTX_WIN=1000000 ;;
-      *)                SL_CTX_WIN=200000  ;;
-    esac
+    SL_CTX_WIN=200000
   fi
 }
 
