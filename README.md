@@ -2,10 +2,9 @@
 
 # statusline-injector
 
-> A drop-in plugin for **Claude Code** and **Codex CLI** that injects an
-> agent's own live status into its context on every turn — system time, the
-> 5h/7d subscription limits, and how full the context window is — as one
-> minimal line.
+**A drop-in plugin for Claude Code and Codex CLI that injects an agent's own live status into its context on every turn.**
+
+The injected status is one minimal line: system time, the 5h/7d subscription limits, and how full the context window is.
 
 **Platforms:** macOS, Linux. **Runtimes:** Claude Code, Codex CLI.
 
@@ -49,18 +48,15 @@ whole fleet — minimality is the design.
 
 ## Why this matters
 
-Picture a person who doesn't know what time it is, how long the conversation
-has been running, or how much energy is left. They may be intelligent, but they
-cannot be apt — there's nothing to orient against. An LLM agent, by default, is
-exactly that.
+An agent that can't see the clock or its remaining budget has nothing to orient
+against. Give it both, and it can act: warn the user that the 5-hour window is
+nearing its limit while there's still room to land the task, notice the context
+filling up and suggest narrowing scope before compaction lops off working
+memory, and adapt to the moment.
 
-Giving it a clock and a sense of "how much budget is left" isn't cosmetic — it
-lets the agent warn the user that the 5-hour window is nearing its limit while
-there's still room to land the task, notice the context filling up and suggest
-narrowing scope before compaction lops off working memory, and adapt to the
-moment. Each of those behaviors lives in the agent's own instructions — the
-status line only supplies the data. Without it, they're flatly impossible: the
-signal never reaches the model.
+Each of those behaviors lives in the agent's own instructions — the status line
+only supplies the data. Without it, they're impossible: the signal never reaches
+the model.
 
 ## Install
 
