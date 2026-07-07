@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.5] - 2026-07-07
+
+### Fixed
+
+- `hooks/hooks.json` no longer carries a top-level `description` key. Codex's
+  strict (serde `deny_unknown_fields`) hooks parser rejected the whole file —
+  `unknown field \`description\`, expected \`hooks\`` — so **no** statusline
+  hooks (`SessionStart`, `UserPromptSubmit`) loaded on Codex peers at all;
+  Claude silently ignored the key. The file now has only the `hooks` key, which
+  both runtimes accept. The removed prose is redundant with the hook
+  descriptions already in `README.md` / `README.ru.md`. Verified against the
+  real Codex CLI 0.142.5 parser (buggy shape reproduces the exact error; fixed
+  shape loads clean); Claude is unaffected (the `hooks` block is byte-identical
+  and the key was already ignored).
+
 ## [0.1.4] - 2026-06-20
 
 ### Removed

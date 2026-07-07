@@ -1,5 +1,4 @@
 {
-  "description": "statusline-injector hooks. SessionStart: идемпотентно оборачивает statusLine.command в settings.json (Claude — захват лимитов 5h/7d из stdin harness в state-файл; на Codex no-op). UserPromptSubmit: рендерит и инжектит одну минимальную строку статуса в контекст хода (оба рантайма).",
   "hooks": {
     "SessionStart": [
       {
