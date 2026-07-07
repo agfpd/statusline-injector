@@ -1,6 +1,6 @@
 {
   "name": "statusline-injector",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "description": "Injects the agent's own live status (time, 5h/7d subscription limits, context-window fill) into its context every turn as one minimal line. Claude Code + Codex CLI, plug-and-play.",
   "author": {
     "name": "agfpd",
