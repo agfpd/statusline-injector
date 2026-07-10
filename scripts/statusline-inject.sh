@@ -2,9 +2,12 @@
 # statusline-injector — UserPromptSubmit hook (Claude Code + Codex CLI).
 #
 # On every user turn, renders ONE minimal status line and injects it into the
-# agent's context (via hookSpecificOutput.additionalContext):
+# agent's context (via hookSpecificOutput.additionalContext). Time is always
+# shown; context and the 5h/7d limits are appended only when each exceeds the
+# show threshold (SL_SHOW_PCT, default 50%), as a plain neutral fact:
 #
-#   [st 14:30+03 · ctx 70k/200k · 5h 42% · 7d 18%]
+#   [st 14:30+03]                            (a healthy turn — just the clock)
+#   [st 14:30+03 · ctx 150k/200k · 5h 62%]   (context + 5h limit past 50%)
 #
 # Sources, per runtime:
 #   Claude — rate_limits + context_window from the per-session state file the

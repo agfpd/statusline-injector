@@ -23,28 +23,37 @@ snapped shut.
 
 ## What the agent sees
 
-One line, at the top of every turn:
+One line, at the top of every turn. The clock is always there; context and the
+subscription limits appear only when they start to matter — each is shown once
+it passes the halfway mark of its own budget, and then as a plain number, never
+an alarm. On a healthy turn that's the whole line:
 
 ```
-[st 14:30+03 · ctx 70k/200k · 5h 42% · 7d 18%]
+[st 14:30+03]
 ```
 
-When a limit nears its threshold, its segment expands to show the reset time
-and a marker — and only then:
+As the context window or a limit window fills past 50%, its segment appears —
+still a bare fact:
 
 ```
-[st 14:30+03 · ctx 188k/200k · 5h 92%→19:00 ⚠️ · 7d 18%]
+[st 14:30+03 · ctx 150k/200k · 5h 62%]
 ```
 
 - `st HH:MM±TZ` — system local time with the system timezone offset (never
-  hardcoded; falls back to UTC).
+  hardcoded; falls back to UTC). **Always shown.**
 - `ctx used/window` — context occupancy as a token count over the window size
-  (e.g. `70k/200k`, `420k/1m`).
-- `5h` / `7d` — the two subscription rate-limit windows, percent used.
+  (e.g. `150k/200k`, `620k/1m`). Shown only once occupancy passes 50% of the
+  window.
+- `5h` / `7d` — the two subscription rate-limit windows, percent used. Each
+  shown only once it passes 50%.
 
-The line is deliberately tiny. On Claude the injected context accumulates in
-the transcript turn after turn, so every extra token is a recurring tax on the
-whole fleet — minimality is the design.
+The metrics are deliberately quiet. Below the halfway mark they are hidden
+entirely; above it they are bare numbers — no reset countdown, no warning
+marker, nothing to fixate on. The goal is a signal the agent can act on near a
+boundary, not a running meter it narrates every turn. And the line is tiny by
+design: on Claude the injected context accumulates in the transcript turn after
+turn, so every token saved below the threshold is a recurring tax spared the
+whole fleet.
 
 ## Why this matters
 
@@ -120,8 +129,9 @@ Driven by env vars (all optional):
 # Where the per-session state + the stable wrapper live (Claude).
 STATUSLINE_STATE_DIR="$HOME/.claude/statusline-injector"
 
-# Percent at which a limit window expands with its reset time + ⚠️.
-SL_WARN_PCT=80
+# Percent of a metric's budget above which it appears in the line. Below this,
+# context and the 5h/7d limits are hidden; the clock is always shown.
+SL_SHOW_PCT=50
 ```
 
 ## Uninstall

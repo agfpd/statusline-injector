@@ -7,8 +7,12 @@
 # globals from whichever source applies (Claude state/transcript or Codex
 # rollout), then calls sl_render.
 #
-# Output line (norm): [st 14:30+03 · ctx 70k/200k · 5h 42% · 7d 18%]
-# At a limit threshold the crossed window expands: 5h 92%→19:00 ⚠️
+# Output line: [st 14:30+03]. Time is ALWAYS shown. Context and the 5h/7d
+# limits are appended — as plain neutral facts, bare numbers — only when each
+# exceeds the show threshold (SL_SHOW_PCT, default 50% of its own cap). So a
+# healthy turn is just [st 14:30+03]; a loaded one is
+# [st 14:30+03 · ctx 150k/200k · 5h 62%]. No reset countdown, no warning marker:
+# the line is data the agent can act on near a boundary, never an alarm.
 #
 # Invariant: nothing here may exit non-zero or block a turn. LC_ALL=C must be
 # set by the caller before sourcing (keeps awk/printf on dot decimals).
@@ -52,7 +56,10 @@ sl_now() {
   fi
 }
 
-# --- portable epoch → "HH:MM" (BSD date -r, GNU date -d @, python3 fallback). ---
+# --- portable epoch → "HH:MM" (BSD date -r, GNU date -d @, python3 fallback).
+#     Retained utility: the neutral line no longer prints reset times, but the
+#     resets_at data is still captured upstream, so this stays wired-in-waiting
+#     rather than deleted. ---
 sl_fmt_reset() {
   local ts="$1"
   case "$ts" in
@@ -90,40 +97,42 @@ sl_fmt_window() {
   fi
 }
 
-# --- one rate-limit segment, with threshold expansion. echoes " · 5h 42%" or
-#     " · 5h 92%→19:00 ⚠️". Empty when pct is absent. ---
+# --- one rate-limit segment. Injected ONLY when usage exceeds the show
+#     threshold (SL_SHOW_PCT, default 50) — as a plain neutral fact " · 5h 62%":
+#     a bare percentage, no reset time and no alarm marker. Empty below the
+#     threshold or when pct is absent. ---
 sl_render_limit() {
-  local label="$1" pct="$2" reset="$3" seg p r
+  local label="$1" pct="$2" p
   [ -n "$pct" ] || return 0
+  awk -v p="$pct" -v t="${SL_SHOW_PCT:-50}" 'BEGIN { exit !(p + 0 > t + 0) }' || return 0
   p=$(printf '%.0f' "$pct" 2>/dev/null) || p="$pct"
-  seg=" · ${label} ${p}%"
-  if awk -v p="$pct" -v t="${SL_WARN_PCT:-80}" 'BEGIN { exit !(p + 0 >= t + 0) }'; then
-    if [ -n "$reset" ]; then
-      r=$(sl_fmt_reset "$reset")
-      [ -n "$r" ] && seg="${seg}→${r}"
-    fi
-    seg="${seg} ⚠️"
-  fi
-  printf '%s' "$seg"
+  printf ' · %s %s%%' "$label" "$p"
 }
 
-# --- assemble the full bracketed line from the SL_* globals. ---
-# Globals consumed (any may be empty): SL_CTX_USED SL_CTX_WIN
-#   SL_RL5 SL_RL5_RESET SL_RL7 SL_RL7_RESET ; threshold SL_WARN_PCT (default 80).
+# --- assemble the bracketed line from the SL_* globals. Time is always present;
+#     context and limits are threshold-gated (SL_SHOW_PCT, default 50) so a
+#     healthy turn collapses to just [st HH:MM±TZ]. ---
+# Globals consumed (any may be empty): SL_CTX_USED SL_CTX_WIN SL_RL5 SL_RL7 ;
+#   show threshold SL_SHOW_PCT (default 50, percent of each metric's cap).
 sl_render() {
   local parts ctx
   parts="st $(sl_now)"
-  if [ -n "${SL_CTX_USED:-}" ] && [ -n "${SL_CTX_WIN:-}" ]; then
-    case "$SL_CTX_WIN" in
-      ''|*[!0-9]*) : ;;
-      *) if [ "$SL_CTX_WIN" -gt 0 ]; then
-           ctx="$(sl_fmt_tokens "$SL_CTX_USED")/$(sl_fmt_window "$SL_CTX_WIN")"
-           [ "$ctx" != "/" ] && parts="$parts · ctx $ctx"
-         fi ;;
-    esac
-  fi
-  parts="$parts$(sl_render_limit 5h "${SL_RL5:-}" "${SL_RL5_RESET:-}")"
-  parts="$parts$(sl_render_limit 7d "${SL_RL7:-}" "${SL_RL7_RESET:-}")"
+  # Context: injected only when occupancy exceeds SL_SHOW_PCT of the window,
+  # as a plain "used/window" fact. Below the threshold it is not surfaced.
+  case "${SL_CTX_USED:-}" in
+    ''|*[!0-9]*) : ;;
+    *) case "${SL_CTX_WIN:-}" in
+         ''|*[!0-9]*) : ;;
+         *) if [ "$SL_CTX_WIN" -gt 0 ] && \
+              awk -v u="$SL_CTX_USED" -v w="$SL_CTX_WIN" -v t="${SL_SHOW_PCT:-50}" \
+                  'BEGIN { exit !(u * 100 > w * t) }'; then
+              ctx="$(sl_fmt_tokens "$SL_CTX_USED")/$(sl_fmt_window "$SL_CTX_WIN")"
+              [ "$ctx" != "/" ] && parts="$parts · ctx $ctx"
+            fi ;;
+       esac ;;
+  esac
+  parts="$parts$(sl_render_limit 5h "${SL_RL5:-}")"
+  parts="$parts$(sl_render_limit 7d "${SL_RL7:-}")"
   printf '[%s]' "$parts"
 }
 

@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-07-10
+
+### Changed
+
+- The injected line is now threshold-gated and strictly neutral. Time is always
+  shown; context (`ctx used/window`) and the 5h/7d limits appear **only** when
+  each exceeds 50% of its own cap — below the threshold they are hidden
+  entirely, so a healthy turn collapses to just `[st 14:30+03]`. Above the
+  threshold each metric is a bare fact (`ctx 150k/200k`, `5h 62%`) — no reset
+  countdown, no `⚠️`, no alarm wording. This stops the agent fixating on healthy
+  metrics and narrating context/limits every turn; the signal now reaches it
+  only near a boundary, as neutral data. The threshold is configurable via the
+  new `SL_SHOW_PCT` env var (default `50`), which replaces `SL_WARN_PCT`. The
+  same `sl_render` drives the Claude no-original wrapper fallback line, so that
+  rare human-facing line gets the same quiet behavior.
+
 ## [0.1.5] - 2026-07-07
 
 ### Fixed
@@ -101,6 +117,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Reworked the earlier standalone two-script tool (state-writer + injector +
   `install.sh`) into the plugin above.
 
+[0.2.0]: https://github.com/agfpd/statusline-injector/compare/v0.1.5...v0.2.0
 [0.1.5]: https://github.com/agfpd/statusline-injector/compare/v0.1.4...v0.1.5
 [0.1.4]: https://github.com/agfpd/statusline-injector/compare/v0.1.3...v0.1.4
 [0.1.3]: https://github.com/agfpd/statusline-injector/compare/v0.1.2...v0.1.3
