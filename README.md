@@ -132,6 +132,12 @@ STATUSLINE_STATE_DIR="$HOME/.claude/statusline-injector"
 # Percent of a metric's budget above which it appears in the line. Below this,
 # context and the 5h/7d limits are hidden; the clock is always shown.
 SL_SHOW_PCT=50
+
+# Retention for the per-session state files (Claude). On every session start,
+# state files untouched for longer than this are deleted; a live session
+# rewrites its own file on every render, so only dead sessions are collected.
+# Set to 0 to keep everything.
+STATUSLINE_STATE_TTL_DAYS=7
 ```
 
 ## Uninstall

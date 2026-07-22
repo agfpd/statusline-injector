@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.1] - 2026-07-22
+
+### Added
+
+- Retention for the per-session Claude state files. The statusLine wrapper
+  writes one `state-<session_id>.json` per session and nothing ever removed
+  them, so the state directory grew without bound (202 files after ~2 weeks on
+  a busy host). `SessionStart` now prunes it once per session **by age**: a
+  live session rewrites its state file on every statusLine render, so its mtime
+  stays fresh and only sessions silent longer than the TTL are collected. TTL
+  is `STATUSLINE_STATE_TTL_DAYS` (default `7`; `0` disables). Abandoned
+  `mktemp` fragments from interrupted atomic writes are swept too. Pruning is
+  best-effort and never affects session start.
+
 ## [0.2.0] - 2026-07-10
 
 ### Changed
@@ -117,6 +131,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Reworked the earlier standalone two-script tool (state-writer + injector +
   `install.sh`) into the plugin above.
 
+[0.2.1]: https://github.com/agfpd/statusline-injector/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/agfpd/statusline-injector/compare/v0.1.5...v0.2.0
 [0.1.5]: https://github.com/agfpd/statusline-injector/compare/v0.1.4...v0.1.5
 [0.1.4]: https://github.com/agfpd/statusline-injector/compare/v0.1.3...v0.1.4

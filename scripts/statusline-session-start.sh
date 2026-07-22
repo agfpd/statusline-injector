@@ -53,6 +53,24 @@ WRAPPER="$STATUSLINE_STATE_DIR/wrapper.sh"
 
 mkdir -p "$STATUSLINE_STATE_DIR" 2>/dev/null || true
 
+# --- Retention. The wrapper writes one state-<session_id>.json per session and
+#     nothing ever removed them, so the directory grew unbounded (202 files on
+#     the fleet host after ~2 weeks). Prune once per session start, by AGE, not
+#     count: a live session's state file is re-written on every statusLine
+#     render, so its mtime stays fresh — only files of sessions that have been
+#     silent for longer than the TTL are removed. A dormant session that wakes
+#     after the TTL simply re-creates its file on the next render (worst case:
+#     one turn without 5h/7d before the wrapper runs again).
+#     Also sweeps abandoned mktemp fragments from interrupted atomic writes.
+#     Never fatal: retention is housekeeping, it must not affect session start.
+: "${STATUSLINE_STATE_TTL_DAYS:=7}"
+if [ "$STATUSLINE_STATE_TTL_DAYS" -gt 0 ] 2>/dev/null; then
+  find "$STATUSLINE_STATE_DIR" -maxdepth 1 -type f -name 'state-*.json' \
+    -mtime +"$STATUSLINE_STATE_TTL_DAYS" -delete 2>/dev/null || true
+fi
+find "$STATUSLINE_STATE_DIR" -maxdepth 1 -type f -name '.state.*' \
+  -mtime +1 -delete 2>/dev/null || true
+
 # --- §5/§6: materialize wrapper.sh + statusline-lib.sh to the stable path,
 #     forward-only — from the NEWEST installed semver snapshot, so a fleet node
 #     pinned to an older version cannot overwrite the shared artifact with old
