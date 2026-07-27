@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.2] - 2026-07-27
+
 ### Fixed
 
 - A missing or non-executable stable Claude wrapper can no longer blank the
@@ -144,6 +146,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Reworked the earlier standalone two-script tool (state-writer + injector +
   `install.sh`) into the plugin above.
 
+[0.2.2]: https://github.com/agfpd/statusline-injector/compare/v0.2.1...v0.2.2
 [0.2.1]: https://github.com/agfpd/statusline-injector/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/agfpd/statusline-injector/compare/v0.1.5...v0.2.0
 [0.1.5]: https://github.com/agfpd/statusline-injector/compare/v0.1.4...v0.1.5
