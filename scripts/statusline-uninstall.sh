@@ -34,6 +34,8 @@ WRAPPER="${STATUSLINE_STATE_DIR:-$HOME/.claude/statusline-injector}/wrapper.sh"
 SLI_JQ_DEFS=""
 read -r -d '' SLI_JQ_DEFS <<'JQDEFS' || true
   def sli_strip: sub("\\s*#sli:[0-9]+$"; "");
+  def sli_strip_guard:
+    sub(" \\|\\| echo '\\[statusline-injector BROKEN: wrapper missing; reinstall plugin\\]'$"; "");
   def sli_unq:
     if (length >= 2 and startswith("'") and endswith("'"))
     then (.[1:-1] | gsub("'\\\\''"; "'"))
@@ -45,7 +47,8 @@ read -r -d '' SLI_JQ_DEFS <<'JQDEFS' || true
   def sli_unwrap:
     sli_strip
     | until((sli_ours | not);
-        if contains(" ") then (sub("^[^ ]+ +"; "") | sli_unq | sli_strip)
+        sli_strip_guard
+        | if contains(" ") then (sub("^[^ ]+ +"; "") | sli_unq | sli_strip)
         else "" end);
   def sli_clean:
     del(._statuslineInjectorWrapped, ._statuslineInjectorOriginal,

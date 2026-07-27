@@ -19,6 +19,9 @@
 #      scope, it is stashed (_statuslineInjectorOriginal) and restored on
 #      uninstall — not silently dropped. For user/none origins, uninstall just
 #      deletes our project entry and the harness falls back to user-scope.
+#   4. No silent death. The persisted command has an inline shell fallback, so
+#      a missing/non-executable stable wrapper renders an operator-visible
+#      diagnostic even when the plugin hook and cache have both disappeared.
 #
 # Invariant: always exit 0; never block session start. No stdout (side-effect
 # only), so Codex's JSON-parsed SessionStart output stays empty.
@@ -135,12 +138,15 @@ fi
 # must still be recognized as ours and unwrapped to the true original —
 # otherwise every re-run nests one more level and the stash is poisoned with a
 # wrap (the 2026-06 fleet incident: up to 5 nested levels). sli_unwrap reverses
-# the exact construction below (wrapper path + " " + @sh(inner)), level by
-# level; sli_orig applies it to whole statusLine objects, following stash
-# chains. Keep these defs in sync with statusline-uninstall.sh.
+# the exact construction below (wrapper path + " " + @sh(inner) + inline
+# fallback), level by level; sli_orig applies it to whole statusLine objects,
+# following stash chains. Keep these defs in sync with
+# statusline-uninstall.sh.
 SLI_JQ_DEFS=""
 read -r -d '' SLI_JQ_DEFS <<'JQDEFS' || true
   def sli_strip: sub("\\s*#sli:[0-9]+$"; "");
+  def sli_strip_guard:
+    sub(" \\|\\| echo '\\[statusline-injector BROKEN: wrapper missing; reinstall plugin\\]'$"; "");
   def sli_unq:
     if (length >= 2 and startswith("'") and endswith("'"))
     then (.[1:-1] | gsub("'\\\\''"; "'"))
@@ -152,7 +158,8 @@ read -r -d '' SLI_JQ_DEFS <<'JQDEFS' || true
   def sli_unwrap:
     sli_strip
     | until((sli_ours | not);
-        if contains(" ") then (sub("^[^ ]+ +"; "") | sli_unq | sli_strip)
+        sli_strip_guard
+        | if contains(" ") then (sub("^[^ ]+ +"; "") | sli_unq | sli_strip)
         else "" end);
   def sli_clean:
     del(._statuslineInjectorWrapped, ._statuslineInjectorOriginal,
@@ -173,6 +180,7 @@ TMP=$(mktemp "$PROJECT_DIR/.claude/.settings.XXXXXX" 2>/dev/null || true)
 
 jq \
   --arg w "$WRAPPER" \
+  --arg guard " || echo '[statusline-injector BROKEN: wrapper missing; reinstall plugin]'" \
   --argjson u "$USER_ST" \
   "$SLI_JQ_DEFS"'
   .statusLine as $cur
@@ -192,7 +200,10 @@ jq \
     ) as $o
   | .statusLine = {
       type: "command",
-      command: ($w + (if (($o.obj.command) // "") != "" then " " + ($o.obj.command | @sh) else "" end)),
+      command: ($w
+                + (if (($o.obj.command) // "") != ""
+                   then " " + ($o.obj.command | @sh) else "" end)
+                + $guard),
       _statuslineInjectorWrapped: true,
       _statuslineInjectorOriginalSource: $o.src,
       _statuslineInjectorOriginal: (if $o.src == "project" then $o.obj else null end)

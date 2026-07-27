@@ -17,8 +17,9 @@
 #
 # This script lives at a STABLE path (~/.claude/statusline-injector/wrapper.sh
 # by default), materialized forward-only by the SessionStart hook, so it keeps
-# working even after a plugin update or uninstall — the user's statusLine never
-# breaks.
+# working after a plugin update or uninstall. The persisted command has its own
+# inline fallback: if this file is missing or cannot run, Claude displays a
+# diagnostic instead of silently blanking the status line.
 #
 # Invariant: always exit 0; never block a render.
 
@@ -61,7 +62,12 @@ fi
 
 # No original statusLine — render our own minimal line for the TUI, straight
 # from the rich blob we just captured.
-if [ -z "$IN" ] || ! command -v jq >/dev/null 2>&1; then
+if [ -z "$IN" ]; then
+  printf '%s\n' '[statusline-injector BROKEN: no input from Claude]'
+  exit 0
+fi
+if ! command -v jq >/dev/null 2>&1; then
+  printf '%s\n' '[statusline-injector BROKEN: jq missing; install jq]'
   exit 0
 fi
 
@@ -71,7 +77,11 @@ fi
 # sibling, then fall back to the plugin root if we happen to run in-tree.
 LIB="$(cd "$(dirname "${BASH_SOURCE[0]}")" 2>/dev/null && pwd)/statusline-lib.sh"
 [ -f "$LIB" ] || LIB="${CLAUDE_PLUGIN_ROOT:-}/scripts/statusline-lib.sh"
-[ -f "$LIB" ] || exit 0
+if [ ! -f "$LIB" ]; then
+  printf '%s\n' \
+    '[statusline-injector BROKEN: statusline-lib.sh missing; reinstall plugin]'
+  exit 0
+fi
 # shellcheck source=/dev/null
 . "$LIB"
 

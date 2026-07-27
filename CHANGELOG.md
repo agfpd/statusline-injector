@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- A missing or non-executable stable Claude wrapper can no longer blank the
+  status line silently. The persisted `statusLine.command` now ends with a
+  dependency-free shell fallback that renders
+  `[statusline-injector BROKEN: wrapper missing; reinstall plugin]` when the
+  wrapper cannot run. Because the fallback lives in `settings.json`, it remains
+  effective even if both the plugin hook and its cache have disappeared.
+  Self-wrap detection and uninstall strip the guard before recovering the true
+  original command, including marker-less and nested legacy wraps. The
+  no-original wrapper fallback likewise reports missing `jq`, missing input,
+  or a missing sibling library rather than returning an empty line.
+
 ## [0.2.1] - 2026-07-22
 
 ### Added

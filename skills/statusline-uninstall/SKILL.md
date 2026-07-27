@@ -21,8 +21,9 @@ this skill undoes that wrap.
 
 Note: the wrap is self-degrading — the wrapper sits at a stable path and keeps
 passing the user's original statusLine through even if the plugin is removed, so
-the terminal status line never breaks. Reverting is for a clean state, not to
-prevent breakage.
+the terminal status line keeps working. If the stable wrapper itself is missing,
+the persisted command shows a visible reinstall diagnostic instead of going
+blank. Reverting is for a clean state.
 
 ## Revert the wrap (Claude Code)
 

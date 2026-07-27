@@ -92,8 +92,9 @@ decide against it, the [`statusline-uninstall`](#uninstall) skill reverses the
 whole loop — it touches nothing but the `statusLine` command string.
 
 > Requires `jq` on `PATH`. macOS: `brew install jq`. Debian/Ubuntu:
-> `apt install jq`. If `jq` is missing the plugin degrades silently — it never
-> blocks a turn.
+> `apt install jq`. Hooks remain non-blocking if `jq` is missing; when the
+> plugin owns the Claude terminal line, that line shows a visible install
+> diagnostic instead of going blank.
 
 ## How it works
 
@@ -115,7 +116,11 @@ the user's original statusLine command and echoes its stdout verbatim — the
 user's terminal status line is preserved untouched. The `UserPromptSubmit` hook
 reads the state file and renders the line. The wrap is reversible and never
 edits the contents of the user's script — only the command string in
-`settings.json`.
+`settings.json`. That command also contains a dependency-free inline guard: if
+the stable wrapper is missing or cannot run, the terminal shows
+`[statusline-injector BROKEN: wrapper missing; reinstall plugin]` instead of a
+blank status line. The guard remains effective even if the plugin hook and
+cache are gone.
 
 **Codex — no wrapper.** Everything (limits and context) already lives in the
 session rollout, so the same `UserPromptSubmit` hook reads it directly. No
@@ -156,7 +161,8 @@ back to the untouched user-scope one). Codex uses no wrapper, so there is
 nothing to revert there. Then remove the plugin itself with
 `claude plugin uninstall statusline-injector` / `codex plugin remove`. The wrap
 is self-degrading anyway — the wrapper keeps your original statusLine working
-even if the plugin is removed without reverting.
+even if the plugin is removed without reverting; if the stable wrapper itself
+is lost, the inline guard makes the failure visible.
 
 ## What this is NOT
 
