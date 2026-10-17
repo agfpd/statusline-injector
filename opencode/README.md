@@ -20,6 +20,10 @@ prompt (it never replaces the agent prompt or other plugins' additions):
 | context | latest finished assistant message from the native `session.messages` API: `tokens.input+output+reasoning+cache.read+cache.write` (same formula as the OpenCode TUI) over the request model's `limit.context`. Shown above `SL_SHOW_PCT` (default 50). | `ctx n/a(<reason>)`: `no-usage` (no finished response yet, or the provider reported no usage — OpenCode turns that into zeros, which are NOT reported as an empty context), `response-error`, `compacted`, `model-change`, `window`, `api-error`, `session` |
 | 5h / 7d | **not available**: OpenCode exposes per-message usage/cost, not subscription or provider quota windows. NVIDIA API usage is not Codex's 5h/7d. | always `5h/7d n/a` — never a fabricated 0% |
 
+**PM decision 2026-10-17:** 5h/7d on OpenCode is a proven limitation and stays
+`n/a`. The plugin does not make its own provider API calls to obtain quota
+headers.
+
 `ctx(last)` is the context of the previous completed request, not a forecast for
 the current one. A failing native API is fail-open for the turn (`ctx n/a(api-error)`)
 and visible once per failure streak via the native app log and a TUI toast; no
