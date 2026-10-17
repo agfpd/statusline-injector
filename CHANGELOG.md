@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-10-18
+
 ### Added
 
 - OpenCode support as an iapeer agent runtime (`opencode/`): a native server
@@ -159,6 +161,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Reworked the earlier standalone two-script tool (state-writer + injector +
   `install.sh`) into the plugin above.
 
+[Unreleased]: https://github.com/agfpd/statusline-injector/compare/v0.3.0...HEAD
+[0.3.0]: https://github.com/agfpd/statusline-injector/compare/v0.2.2...v0.3.0
 [0.2.2]: https://github.com/agfpd/statusline-injector/compare/v0.2.1...v0.2.2
 [0.2.1]: https://github.com/agfpd/statusline-injector/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/agfpd/statusline-injector/compare/v0.1.5...v0.2.0

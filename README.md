@@ -90,7 +90,7 @@ codex plugin add statusline-injector@agfpd
 needs iapeer ≥ 0.4.117 and `node` on `PATH`):
 
 ```sh
-git clone --depth 1 --branch <release-tag> https://github.com/agfpd/statusline-injector
+git clone --depth 1 --branch v0.3.0 https://github.com/agfpd/statusline-injector
 node statusline-injector/opencode/capability.mjs register
 ```
 
