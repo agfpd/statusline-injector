@@ -16,7 +16,7 @@ const here = dirname(fileURLToPath(import.meta.url));
 
 function declaration() {
   const { version } = JSON.parse(readFileSync(join(here, "..", ".claude-plugin", "plugin.json"), "utf8"));
-  const tail = (verb) => [join(here, "provision.mjs"), verb, "--personality", "{personality}", "--runtime", "{runtime}", "--cwd", "{cwd}", "--occasion", "{occasion}"];
+  const tail = (verb) => [join(here, "provision.mjs"), verb, "--personality", "{personality}", "--runtime", "{runtime}", "--cwd", "{cwd}", "--private-dir", "{privateDir}", "--occasion", "{occasion}"];
   return {
     schema: 1,
     capability: NAME,

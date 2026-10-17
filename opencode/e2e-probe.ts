@@ -10,11 +10,12 @@ if (!opencode) throw new Error("usage: bun e2e-probe.ts <opencode-binary>");
 const here = dirname(new URL(import.meta.url).pathname);
 const root = mkdtempSync(join(tmpdir(), "sli-opencode-e2e-"));
 const iapeerRoot = join(root, "iapeer"), cwd = join(root, "cwd"), home = join(root, "home");
+const privateDir = join(iapeerRoot, "state/opencode/probe"); // core-owned layout, passed as {privateDir}
 for (const d of [iapeerRoot, cwd, home]) mkdirSync(d);
 const run = (args: string[]) => Bun.spawnSync(["node", join(here, "provision.mjs"), ...args], { stderr: "pipe" });
-const pv = run(["provision-peer", "--personality", "probe", "--runtime", "opencode", "--cwd", cwd, "--root", iapeerRoot]);
+const pv = run(["provision-peer", "--personality", "probe", "--runtime", "opencode", "--cwd", cwd, "--private-dir", privateDir]);
 if (pv.exitCode !== 0) throw new Error("provision failed: " + pv.stderr);
-const fragment = JSON.parse(readFileSync(join(iapeerRoot, "peers/probe/opencode/statusline-injector.json"), "utf8"));
+const fragment = JSON.parse(readFileSync(join(privateDir, "statusline-injector.json"), "utf8"));
 // Scripted per-request provider usage (OpenAI-compatible stream).
 const usages: (object | null)[] = [
   { prompt_tokens: 60000, completion_tokens: 100, total_tokens: 60100 },
@@ -58,7 +59,7 @@ try {
   check("requests captured", wire.length === 4, String(wire.length));
   lines.forEach((l, i) => { check(`turn ${i + 1} doctrine kept`, l.doctrine, String(l.doctrine)); check(`turn ${i + 1} line`, l.line.length === 1 && want[i].test(l.line[0]), JSON.stringify(l.line)); });
 } finally { p.kill(); await p.exited; provider.stop(true); }
-const un = run(["unprovision-peer", "--personality", "probe", "--runtime", "opencode", "--cwd", cwd, "--root", iapeerRoot]);
-check("unprovision removes surfaces", un.exitCode === 0 && !existsSync(join(iapeerRoot, "peers/probe/opencode/statusline-injector.json")) && !existsSync(join(iapeerRoot, "peers/probe/opencode/statusline-injector-plugin.mjs")), String(un.exitCode));
+const un = run(["unprovision-peer", "--personality", "probe", "--runtime", "opencode", "--cwd", cwd, "--private-dir", privateDir]);
+check("unprovision removes surfaces", un.exitCode === 0 && !existsSync(join(privateDir, "statusline-injector.json")) && !existsSync(join(privateDir, "statusline-injector-plugin.mjs")), String(un.exitCode));
 if (fail) console.log("artifacts kept: " + root); else rmSync(root, { recursive: true, force: true });
 process.exit(fail ? 1 : 0);

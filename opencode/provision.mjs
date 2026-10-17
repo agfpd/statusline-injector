@@ -2,10 +2,11 @@
 // iapeer capability lifecycle command (iapeer docs/21). Not a runtime hook:
 // fail loudly (exit 1, reason on stderr) unless the surfaces are in place.
 //   provision.mjs provision-peer|unprovision-peer --personality P --runtime opencode
-//                 --cwd DIR [--occasion birth|sweep-on|remove|off-all] [--root IAPEER_ROOT]
+//                 --cwd DIR --private-dir DIR [--occasion birth|sweep-on|remove|off-all]
+// The core owns the private-dir layout and passes it ({privateDir}); this plugin
+// never derives it, so a core-side move cannot leave surfaces where nothing reads.
 import { readFile, writeFile, mkdir, rename, rm, mkdtemp, readdir, stat } from "node:fs/promises";
-import { homedir } from "node:os";
-import { dirname, join, resolve } from "node:path";
+import { dirname, isAbsolute, join, normalize } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
 const NAME = "statusline-injector";
@@ -18,15 +19,18 @@ function parse(argv) {
   const options = {};
   for (let i = 0; i < args.length; i += 2) {
     const key = args[i];
-    if (!["--personality", "--runtime", "--cwd", "--root", "--occasion"].includes(key) || !args[i + 1] || options[key]) throw new Error(`invalid argument ${JSON.stringify(key)}`);
+    if (!["--personality", "--runtime", "--cwd", "--private-dir", "--occasion"].includes(key) || !args[i + 1] || options[key]) throw new Error(`invalid argument ${JSON.stringify(key)}`);
     options[key] = args[i + 1];
   }
   if (!["provision-peer", "unprovision-peer"].includes(command) || !options["--cwd"] || !/^[a-z][a-z0-9-]{0,31}$/.test(options["--personality"] ?? "")) {
-    throw new Error("usage: provision.mjs provision-peer|unprovision-peer --personality NAME --runtime opencode --cwd DIR [--occasion OCCASION] [--root IAPEER_ROOT]");
+    throw new Error("usage: provision.mjs provision-peer|unprovision-peer --personality NAME --runtime opencode --cwd DIR --private-dir DIR [--occasion OCCASION]");
   }
   if (options["--runtime"] !== "opencode") throw new Error(`runtime ${JSON.stringify(options["--runtime"])} is not provisioned here (Claude/Codex use the agfpd plugin install)`);
   if (options["--occasion"] && !OCCASIONS.includes(options["--occasion"])) throw new Error(`unknown occasion ${JSON.stringify(options["--occasion"])}`);
-  return { command, personality: options["--personality"], root: resolve(options["--root"] ?? process.env.IAPEER_ROOT ?? join(homedir(), ".iapeer")) };
+  const dir = options["--private-dir"];
+  if (!dir) throw new Error("--private-dir is required (core placeholder {privateDir}); refusing to guess the core's layout");
+  if (!isAbsolute(dir) || normalize(dir) !== dir) throw new Error(`--private-dir must be an absolute normalized path: ${JSON.stringify(dir)}`);
+  return { command, dir };
 }
 
 // mkdir is atomic: one owner per peer dir. Stale lock (crashed owner) is reclaimed.
@@ -44,8 +48,7 @@ async function lock(dir) {
 const same = async (path, content) => { try { return (await readFile(path)).equals(Buffer.from(content)); } catch (e) { if (e.code === "ENOENT") return false; throw e; } };
 
 async function main() {
-  const { command, personality, root } = parse(process.argv.slice(2));
-  const dir = join(root, "peers", personality, "opencode");
+  const { command, dir } = parse(process.argv.slice(2));
   const plugin = join(dir, `${NAME}-plugin.mjs`);
   const fragment = join(dir, `${NAME}.json`);
 

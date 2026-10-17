@@ -52,11 +52,14 @@ re-run `register` after a plugin update or a node relocation. Repair:
 The core then calls, per `(peer, opencode)` endpoint:
 
 ```
-node opencode/provision.mjs provision-peer   --personality <p> --runtime opencode --cwd <cwd> --occasion birth|sweep-on [--root <IAPEER_ROOT>]
-node opencode/provision.mjs unprovision-peer --personality <p> --runtime opencode --cwd <cwd> --occasion remove|off-all  [--root <IAPEER_ROOT>]
+node opencode/provision.mjs provision-peer   --personality <p> --runtime opencode --cwd <cwd> --private-dir <dir> --occasion birth|sweep-on
+node opencode/provision.mjs unprovision-peer --personality <p> --runtime opencode --cwd <cwd> --private-dir <dir> --occasion remove|off-all
 ```
 
-Writes only `<root>/peers/<p>/opencode/statusline-injector-plugin.mjs` and
+`--private-dir` is the core's `{privateDir}` placeholder (today
+`<IAPEER_ROOT>/state/opencode/<p>/`). The plugin never derives that layout: without
+the flag, or with a relative/non-normalized path, it refuses (exit 1). It writes only
+`<dir>/statusline-injector-plugin.mjs` and
 `statusline-injector.json` (`{"plugin":["file://…"]}`): atomic, idempotent (no
 rewrite when unchanged), plugin before declaration, verified after write; exit 0
 only when both are in place, otherwise exit 1 with the reason on stderr. A
