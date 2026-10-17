@@ -6,7 +6,7 @@ English version: [README.md](./README.md)
 
 Инжектнутый статус — одна минимальная строка: системное время, лимиты подписки 5h/7d и заполнение окна контекста.
 
-**Платформы:** macOS, Linux. **Рантаймы:** Claude Code, Codex CLI.
+**Платформы:** macOS, Linux. **Рантаймы:** Claude Code, Codex CLI, OpenCode (через iapeer).
 
 ## Проблема: агент, который не видит часов
 
@@ -82,6 +82,21 @@ claude plugin install statusline-injector@agfpd --scope project
 codex plugin marketplace upgrade agfpd
 codex plugin add statusline-injector@agfpd
 ```
+
+**OpenCode** (как агентский рантайм [iapeer](https://github.com/agfpd/iapeer);
+нужны iapeer ≥ 0.4.117 и `node` в `PATH`):
+
+```sh
+git clone --depth 1 --branch <release-tag> https://github.com/agfpd/statusline-injector
+node statusline-injector/opencode/capability.mjs register
+```
+
+`register` копирует OpenCode-плагин в стабильный каталог и регистрирует его как
+capability iapeer. После этого iapeer провижинит все существующие OpenCode-пиры и
+каждый новый. Строка появляется со следующего запуска пира. На OpenCode лимиты
+5h/7d всегда показываются как `n/a`: OpenCode отдаёт usage по сообщениям, а не
+окна подписки. Удаление: `node statusline-injector/opencode/capability.mjs unregister`.
+Подробности — в [`opencode/README.md`](opencode/README.md).
 
 Перезапустите сессию (или `/reload-plugins` в интерактивном Claude Code) — и
 строка начнёт появляться на каждом ходу. Project scope удобен для пробы: если

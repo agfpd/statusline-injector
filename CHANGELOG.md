@@ -9,12 +9,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Preview OpenCode support (`opencode/`): a native server plugin that appends
-  time and last-request context occupancy to the system prompt, reports 5h/7d
-  as explicitly unavailable, and never turns missing provider usage into zero;
-  a per-peer provisioner for the iapeer private fragment ABI; and a
-  reproducible end-to-end probe against a real OpenCode binary. Not yet
-  auto-wired by iapeer and not part of a release.
+- OpenCode support as an iapeer agent runtime (`opencode/`): a native server
+  plugin appends time and last-request context occupancy to the system prompt
+  (same threshold rule as Claude/Codex), reports 5h/7d as explicitly `n/a`
+  (OpenCode exposes no subscription windows) and never turns missing provider
+  usage into zero. Installed as an iapeer capability (`capability.mjs
+  register|unregister`, iapeer ≥ 0.4.117): files go to a stable directory, the
+  core provisions every OpenCode peer at birth/sweep and removes surfaces at
+  remove/unregister; the provisioner takes the core-owned private directory and
+  is idempotent, locked and verified. Includes a reproducible end-to-end probe
+  against a real OpenCode binary.
 
 ## [0.2.2] - 2026-07-27
 

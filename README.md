@@ -6,7 +6,7 @@
 
 The injected status is one minimal line: system time, the 5h/7d subscription limits, and how full the context window is.
 
-**Platforms:** macOS, Linux. **Runtimes:** Claude Code, Codex CLI.
+**Platforms:** macOS, Linux. **Runtimes:** Claude Code, Codex CLI, OpenCode (via iapeer).
 
 ## The problem: an agent that cannot see the clock
 
@@ -85,6 +85,21 @@ claude plugin install statusline-injector@agfpd --scope project
 codex plugin marketplace upgrade agfpd
 codex plugin add statusline-injector@agfpd
 ```
+
+**OpenCode** (as an [iapeer](https://github.com/agfpd/iapeer) agent runtime;
+needs iapeer ≥ 0.4.117 and `node` on `PATH`):
+
+```sh
+git clone --depth 1 --branch <release-tag> https://github.com/agfpd/statusline-injector
+node statusline-injector/opencode/capability.mjs register
+```
+
+`register` copies the OpenCode plugin to a stable directory and registers it as
+an iapeer capability; iapeer then provisions every existing OpenCode peer and
+each new one. The new line takes effect on the peer's next launch. On OpenCode
+the 5h/7d limits always read `n/a`: OpenCode exposes per-message usage, not
+subscription windows. Uninstall: `node statusline-injector/opencode/capability.mjs unregister`.
+Details: [`opencode/README.md`](opencode/README.md).
 
 Restart the session (or `/reload-plugins` in interactive Claude Code) and the
 line starts appearing on every turn. Project scope keeps it easy to try: if you

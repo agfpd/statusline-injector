@@ -1,8 +1,8 @@
-# OpenCode support (preview, not released)
+# OpenCode support
 
-Status: source + isolated proof. Wired to the iapeer capability lifecycle (not yet released), not
-announced in the main README, not part of a tagged release. Tracks the iapeer
-phase "OpenCode как полноценный агентский рантайм" (matrix row OC13).
+OpenCode runs as an iapeer agent runtime; this plugin is installed into it as an
+iapeer capability (iapeer ≥ 0.4.117). Verified end to end through the core on a
+live OpenCode peer: register → provision → the line reaches the model.
 
 ## What it does
 
