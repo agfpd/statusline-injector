@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Preview OpenCode support (`opencode/`): a native server plugin that appends
+  time and last-request context occupancy to the system prompt, reports 5h/7d
+  as explicitly unavailable, and never turns missing provider usage into zero;
+  a per-peer provisioner for the iapeer private fragment ABI; and a
+  reproducible end-to-end probe against a real OpenCode binary. Not yet
+  auto-wired by iapeer and not part of a release.
+
 ## [0.2.2] - 2026-07-27
 
 ### Fixed
