@@ -1,6 +1,6 @@
 # OpenCode support (preview, not released)
 
-Status: source + isolated proof. Not wired into iapeer automatically yet, not
+Status: source + isolated proof. Wired to the iapeer capability lifecycle (not yet released), not
 announced in the main README, not part of a tagged release. Tracks the iapeer
 phase "OpenCode как полноценный агентский рантайм" (matrix row OC13).
 
@@ -29,20 +29,42 @@ the current one. A failing native API is fail-open for the turn (`ctx n/a(api-er
 and visible once per failure streak via the native app log and a TUI toast; no
 error bodies or credentials are copied into diagnostics.
 
-## Install ABI (agreed with iapeer core, 2026-10-17)
+## Install: iapeer capability lifecycle (iapeer docs/21)
+
+The plugin is a registered iapeer **capability**; the core decides when and for
+which peer it is provisioned, the plugin decides what is written.
 
 ```
-node opencode/provision.mjs provision-peer   --personality <p> --runtime opencode --cwd <cwd> [--root <IAPEER_ROOT>]
-node opencode/provision.mjs unprovision-peer --personality <p> --runtime opencode --cwd <cwd> [--root <IAPEER_ROOT>]
+node opencode/capability.mjs register     # install / update: declare + sweep every existing peer
+node opencode/capability.mjs unregister   # uninstall: unprovision every endpoint, drop the declaration
+node opencode/capability.mjs declaration  # print the declaration only
+```
+
+`register` writes the declaration to a temp file and runs
+`iapeer capability register` (`iapeer` on PATH, or `IAPEER_CLI="bun …/src/cli/index.ts"`
+for a sandbox; `IAPEER_ROOT` passes through). The declaration names
+`runtimes: ["opencode"]` only — Claude/Codex surfaces come from the agfpd
+marketplace plugin, not from this lifecycle. `command` is the absolute path of
+the node that ran `register`, `args[0]` the absolute path of `provision.mjs`:
+re-run `register` after a plugin update or a node relocation. Repair:
+`iapeer capability sync statusline-injector`.
+
+The core then calls, per `(peer, opencode)` endpoint:
+
+```
+node opencode/provision.mjs provision-peer   --personality <p> --runtime opencode --cwd <cwd> --occasion birth|sweep-on [--root <IAPEER_ROOT>]
+node opencode/provision.mjs unprovision-peer --personality <p> --runtime opencode --cwd <cwd> --occasion remove|off-all  [--root <IAPEER_ROOT>]
 ```
 
 Writes only `<root>/peers/<p>/opencode/statusline-injector-plugin.mjs` and
-`statusline-injector.json` (`{"plugin":["file://…"]}`), atomic and idempotent,
-plugin before declaration. The core merges the fragment into
-`OPENCODE_CONFIG_CONTENT` on launch; the shared `cwd/opencode.json` is never
-touched. Install errors exit non-zero. Automatic invocation from iapeer
-create/add-runtime is an OPEN core item (no generic capability-lifecycle entry
-exists yet) — manual provisioning is a test path, not the supported install.
+`statusline-injector.json` (`{"plugin":["file://…"]}`): atomic, idempotent (no
+rewrite when unchanged), plugin before declaration, verified after write; exit 0
+only when both are in place, otherwise exit 1 with the reason on stderr. A
+per-peer `mkdir` lock serializes concurrent calls (stale after 120 s). Unprovision
+removes only these two files. The core merges the fragment into
+`OPENCODE_CONFIG_CONTENT` on launch only while the capability is registered; the
+shared `cwd/opencode.json` is never touched. The core calls the commands only
+once `opencode` is in `host.agent_runtimes` (with the iapeer OpenCode adapter).
 
 ## Reproduce the proof
 
