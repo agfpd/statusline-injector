@@ -101,12 +101,19 @@ sl_fmt_window() {
 #     threshold (SL_SHOW_PCT, default 50) — as a plain neutral fact " · 5h 62%":
 #     a bare percentage, no reset time and no alarm marker. Empty below the
 #     threshold or when pct is absent. ---
+sl_show_pct() {
+  awk -v t="${SL_SHOW_PCT:-50}" 'BEGIN {
+    if (t ~ /^[0-9]+([.][0-9]+)?$/ && t + 0 <= 100) print t; else print 50
+  }'
+}
+
 sl_render_limit() {
-  local label="$1" pct="$2" p
-  [ -n "$pct" ] || return 0
-  awk -v p="$pct" -v t="${SL_SHOW_PCT:-50}" 'BEGIN { exit !(p + 0 > t + 0) }' || return 0
-  p=$(printf '%.0f' "$pct" 2>/dev/null) || p="$pct"
-  printf ' · %s %s%%' "$label" "$p"
+  local label="$1" pct="$2"
+  # Malformed upstream values are missing data, never raw text to inject.
+  awk -v label="$label" -v p="$pct" -v t="$(sl_show_pct)" 'BEGIN {
+    if (p ~ /^[0-9]+([.][0-9]+)?$/ && p + 0 > t + 0)
+      printf " · %s %.0f%%", label, p
+  }'
 }
 
 # --- assemble the bracketed line from the SL_* globals. Time is always present;
@@ -124,7 +131,7 @@ sl_render() {
     *) case "${SL_CTX_WIN:-}" in
          ''|*[!0-9]*) : ;;
          *) if [ "$SL_CTX_WIN" -gt 0 ] && \
-              awk -v u="$SL_CTX_USED" -v w="$SL_CTX_WIN" -v t="${SL_SHOW_PCT:-50}" \
+              awk -v u="$SL_CTX_USED" -v w="$SL_CTX_WIN" -v t="$(sl_show_pct)" \
                   'BEGIN { exit !(u * 100 > w * t) }'; then
               ctx="$(sl_fmt_tokens "$SL_CTX_USED")/$(sl_fmt_window "$SL_CTX_WIN")"
               [ "$ctx" != "/" ] && parts="$parts · ctx $ctx"

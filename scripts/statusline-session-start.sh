@@ -80,7 +80,7 @@ find "$STATUSLINE_STATE_DIR" -maxdepth 1 -type f -name '.state.*' \
 #     code. Falls back to the running plugin root when no cache snapshot exists
 #     (e.g. in-tree dev). ---
 materialize() {
-  local name="$1" dest="$2" src newest top v d
+  local name="$1" dest="$2" src newest top v d tmp
   src="$ROOT/scripts/$name"
   local base="$HOME/.claude/plugins/cache/agfpd/statusline-injector"
   if [ -d "$base" ]; then
@@ -103,7 +103,13 @@ materialize() {
     fi
   fi
   if [ -f "$src" ]; then
-    cp -f "$src" "$dest" 2>/dev/null || true
+    # Concurrent sessions may execute the stable copy while we update it.
+    # Never truncate an executable/library in place or churn unchanged files.
+    if ! cmp -s "$src" "$dest" 2>/dev/null; then
+      tmp=$(mktemp "$STATUSLINE_STATE_DIR/.state.XXXXXX" 2>/dev/null) || return 0
+      cp -p "$src" "$tmp" 2>/dev/null && mv -f "$tmp" "$dest" 2>/dev/null \
+        || rm -f "$tmp" 2>/dev/null
+    fi
   fi
 }
 materialize "statusline-wrapper.sh" "$WRAPPER"
@@ -120,8 +126,10 @@ P="$PROJECT_DIR/.claude/settings.json"
 U="$HOME/.claude/settings.json"
 
 mkdir -p "$PROJECT_DIR/.claude" 2>/dev/null || true
-[ -f "$P" ] || echo '{}' > "$P" 2>/dev/null || true
-[ -f "$P" ] || exit 0
+# jq can read an empty initial object without creating a non-atomic settings
+# file first. The final write below is always mktemp + mv.
+INPUT="$P"
+[ -f "$INPUT" ] || INPUT="/dev/null"
 
 # user-scope statusLine object (or null) — the live "true original" source.
 USER_ST="null"
@@ -178,12 +186,12 @@ JQDEFS
 TMP=$(mktemp "$PROJECT_DIR/.claude/.settings.XXXXXX" 2>/dev/null || true)
 [ -n "$TMP" ] || exit 0
 
-jq \
+jq -s \
   --arg w "$WRAPPER" \
   --arg guard " || echo '[statusline-injector BROKEN: wrapper missing; reinstall plugin]'" \
   --argjson u "$USER_ST" \
   "$SLI_JQ_DEFS"'
-  .statusLine as $cur
+  (.[0] // {}) | .statusLine as $cur
   | ($u | sli_orig) as $uo
   | (
       ( if ($cur != null and $cur._statuslineInjectorWrapped == true) then
@@ -208,7 +216,7 @@ jq \
       _statuslineInjectorOriginalSource: $o.src,
       _statuslineInjectorOriginal: (if $o.src == "project" then $o.obj else null end)
     }
-  ' "$P" > "$TMP" 2>/dev/null \
+  ' "$INPUT" > "$TMP" 2>/dev/null \
   && { if cmp -s "$TMP" "$P" 2>/dev/null; then rm -f "$TMP" 2>/dev/null
        else mv -f "$TMP" "$P" 2>/dev/null; fi; } \
   || rm -f "$TMP" 2>/dev/null

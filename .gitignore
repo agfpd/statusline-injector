@@ -15,6 +15,7 @@ config.env
 
 # Local test artifacts
 /tmp/
+__pycache__/
 
 # Claude Code working files — keep out of this public repo
 CLAUDE.md

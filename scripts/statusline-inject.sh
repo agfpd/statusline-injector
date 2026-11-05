@@ -73,7 +73,7 @@ fi
 
 # --- Claude: state file (+ transcript fallback for context) ---
 gather_claude() {
-  local state li lr lc usage
+  local state
   state="$STATUSLINE_STATE_DIR/state${SID:+-$SID}.json"
   [ -f "$state" ] || state="$STATUSLINE_STATE_DIR/state.json"
   if [ -f "$state" ]; then
@@ -86,13 +86,18 @@ gather_claude() {
   fi
   # Context fallback from the transcript (older Claude: no context_window blob).
   if [ -z "$SL_CTX_USED" ] && [ -n "$TPATH" ] && [ -f "$TPATH" ]; then
-    usage=$(jq -s 'map(select(.message.usage != null)) | last // empty | .message.usage' "$TPATH" 2>/dev/null || true)
-    if [ -n "$usage" ] && [ "$usage" != "null" ]; then
-      li=$(printf '%s' "$usage" | jq -r '.input_tokens // 0' 2>/dev/null || echo 0)
-      lr=$(printf '%s' "$usage" | jq -r '.cache_read_input_tokens // 0' 2>/dev/null || echo 0)
-      lc=$(printf '%s' "$usage" | jq -r '.cache_creation_input_tokens // 0' 2>/dev/null || echo 0)
-      SL_CTX_USED=$(( li + lr + lc ))
-    fi
+    # Stream JSONL, tolerating a partial final write. Validate before adding:
+    # shell arithmetic on malformed usage can terminate even a fail-open hook.
+    SL_CTX_USED=$(grep -F '"usage"' "$TPATH" 2>/dev/null | jq -Rnr '
+      reduce inputs as $line (null;
+        (($line | fromjson? | .message.usage?) // null) as $u
+        | ([$u.input_tokens // 0, $u.cache_read_input_tokens // 0,
+            $u.cache_creation_input_tokens // 0]) as $n
+        | if ($u | type) == "object" and
+             ($n | all(.[]; type == "number" and . >= 0 and floor == .))
+          then ($n | add) else . end)
+      | . // empty
+    ' 2>/dev/null || true)
   fi
   # Window fallback: default 200k when the window size is unknown (e.g. state not
   # yet written this session). Modern Claude (>= v2.1.132) delivers
@@ -107,7 +112,7 @@ gather_claude() {
 codex_find_rollout() {
   local want root f meta metacwd
   want=$(printf '%s' "$CWD" | sed 's:/*$::')
-  root="$HOME/.codex/sessions"
+  root="${CODEX_HOME:-$HOME/.codex}/sessions"
   [ -d "$root" ] || return 1
   # Newest-first; the current session's rollout was just appended (the user
   # prompt), so it sorts near the top. Cap the scan for cheapness.
@@ -120,13 +125,13 @@ codex_find_rollout() {
       printf '%s' "$f"; return 0
     fi
   done <<EOF
-$(find "$root" -type f -name 'rollout-*.jsonl' 2>/dev/null | xargs ls -t 2>/dev/null | head -60)
+$(find "$root" -type f -name 'rollout-*.jsonl' -exec ls -t {} + 2>/dev/null | head -60)
 EOF
   return 1
 }
 
 gather_codex() {
-  local ro last_tc last_rl pu pw pr su sw sr
+  local ro snapshot pu pw pr su sw sr
   # Codex passes transcript_path on the hook — for codex it is the session
   # rollout itself. Prefer it (exact), fall back to locating by cwd.
   if [ -n "$TPATH" ] && [ -f "$TPATH" ]; then
@@ -135,34 +140,38 @@ gather_codex() {
     ro=$(codex_find_rollout) || ro=""
   fi
   [ -n "$ro" ] || return 0
-  last_tc=$(grep -h '"token_count"' "$ro" 2>/dev/null | tail -1 || true)
-  if [ -n "$last_tc" ]; then
-    SL_CTX_USED=$(printf '%s' "$last_tc" | jq -r '.payload.info.last_token_usage.input_tokens // empty' 2>/dev/null || true)
-    SL_CTX_WIN=$(printf '%s'  "$last_tc" | jq -r '.payload.info.model_context_window // empty'           2>/dev/null || true)
-  fi
-  # Last token_count carrying rate_limits (an event may omit them).
-  last_rl=$(grep -h '"rate_limits"' "$ro" 2>/dev/null | tail -1 || true)
-  [ -n "$last_rl" ] || return 0
+  # Keep context and limits independently: a rate-only event has info:null;
+  # a context-only event has rate_limits:null. Neither erases the last sample.
+  # Raw-input streaming avoids slurping a long session and ignores an incomplete
+  # final line while the harness is appending. Other event types are not usage.
+  snapshot=$(grep -F '"token_count"' "$ro" 2>/dev/null | jq -Rnc '
+    reduce inputs as $line ({};
+      (($line | fromjson? | select(.type == "event_msg")
+        | .payload | select(.type == "token_count")) // null) as $p
+      | if ($p.info | type) == "object" then .info = $p.info else . end
+      | if ($p.rate_limits | type) == "object"
+        then .rate_limits = $p.rate_limits else . end)
+  ' 2>/dev/null || true)
+  SL_CTX_USED=$(printf '%s' "$snapshot" | jq -r '.info.last_token_usage.input_tokens // empty' 2>/dev/null || true)
+  SL_CTX_WIN=$(printf '%s' "$snapshot" | jq -r '.info.model_context_window // empty' 2>/dev/null || true)
   # Assign primary/secondary to 5h/7d by window_minutes (300 vs 10080) rather
   # than position, to be robust if the order ever changes.
-  pu=$(printf '%s' "$last_rl" | jq -r '.payload.rate_limits.primary.used_percent   // empty' 2>/dev/null || true)
-  pw=$(printf '%s' "$last_rl" | jq -r '.payload.rate_limits.primary.window_minutes  // empty' 2>/dev/null || true)
-  pr=$(printf '%s' "$last_rl" | jq -r '.payload.rate_limits.primary.resets_at       // empty' 2>/dev/null || true)
-  su=$(printf '%s' "$last_rl" | jq -r '.payload.rate_limits.secondary.used_percent  // empty' 2>/dev/null || true)
-  sw=$(printf '%s' "$last_rl" | jq -r '.payload.rate_limits.secondary.window_minutes // empty' 2>/dev/null || true)
-  sr=$(printf '%s' "$last_rl" | jq -r '.payload.rate_limits.secondary.resets_at      // empty' 2>/dev/null || true)
+  pu=$(printf '%s' "$snapshot" | jq -r '.rate_limits.primary.used_percent   // empty' 2>/dev/null || true)
+  pw=$(printf '%s' "$snapshot" | jq -r '.rate_limits.primary.window_minutes  // empty' 2>/dev/null || true)
+  pr=$(printf '%s' "$snapshot" | jq -r '.rate_limits.primary.resets_at       // empty' 2>/dev/null || true)
+  su=$(printf '%s' "$snapshot" | jq -r '.rate_limits.secondary.used_percent  // empty' 2>/dev/null || true)
+  sw=$(printf '%s' "$snapshot" | jq -r '.rate_limits.secondary.window_minutes // empty' 2>/dev/null || true)
+  sr=$(printf '%s' "$snapshot" | jq -r '.rate_limits.secondary.resets_at      // empty' 2>/dev/null || true)
   codex_assign_limit "$pw" "$pu" "$pr"
   codex_assign_limit "$sw" "$su" "$sr"
 }
 codex_assign_limit() {
   local wm="$1" used="$2" reset="$3"
   [ -n "$used" ] || return 0
-  case "$wm" in ''|*[!0-9]*) return 0 ;; esac
-  if [ "$wm" -le 600 ]; then
-    SL_RL5="$used"; SL_RL5_RESET="$reset"
-  else
-    SL_RL7="$used"; SL_RL7_RESET="$reset"
-  fi
+  case "$wm" in
+    300) SL_RL5="$used"; SL_RL5_RESET="$reset" ;;
+    10080) SL_RL7="$used"; SL_RL7_RESET="$reset" ;;
+  esac
 }
 
 if [ "$RUNTIME" = "codex" ]; then
