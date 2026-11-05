@@ -153,6 +153,9 @@ STATUSLINE_STATE_DIR="$HOME/.claude/statusline-injector"
 # context and the 5h/7d limits are hidden; the clock is always shown.
 SL_SHOW_PCT=50
 
+# Values outside 0–100 or malformed values fall back to 50.
+# Codex respects CODEX_HOME (default: "$HOME/.codex") when locating rollouts.
+
 # Retention for the per-session state files (Claude). On every session start,
 # state files untouched for longer than this are deleted; a live session
 # rewrites its own file on every render, so only dead sessions are collected.
@@ -187,6 +190,20 @@ is lost, the inline guard makes the failure visible.
 - **Not accurate to the token.** Context lags by one step during a tool-heavy
   turn — good enough for "am I approaching the window," not for precise
   budgeting.
+
+## Tests
+
+The offline regression suite requires Python 3, Bash and jq; the plugin itself
+still requires only Bash and jq:
+
+```sh
+python3 -m unittest discover -s tests -v
+```
+
+It covers partial transcripts, separate context/limit events, custom Codex homes,
+thresholds, fail-open behavior, wrapper healing, uninstall and atomic updates.
+For live verification, use an isolated project and interactive Claude/Codex
+sessions; confirm the injected line on a second turn after usage is available.
 
 ## License
 

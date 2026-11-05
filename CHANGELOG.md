@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.1] - 2026-11-05
+
+### Fixed
+
+- Preserve Codex context and subscription limits independently when token-count
+  events omit one sample; tolerate partially written JSONL records.
+- Honor custom `CODEX_HOME` directories and rollout paths containing spaces.
+- Stream Claude transcript fallback and validate token counts before arithmetic.
+- Ignore malformed percentages and default invalid display thresholds to 50.
+- Materialize stable wrapper/library files atomically without rewriting unchanged
+  files; create initial project settings through the same atomic write path.
+
+### Added
+
+- Offline Python regression suite for hooks, rendering, wrapping and uninstall.
+
 ## [0.3.0] - 2026-10-18
 
 ### Added
@@ -161,7 +177,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Reworked the earlier standalone two-script tool (state-writer + injector +
   `install.sh`) into the plugin above.
 
-[Unreleased]: https://github.com/agfpd/statusline-injector/compare/v0.3.0...HEAD
+[Unreleased]: https://github.com/agfpd/statusline-injector/compare/v0.3.1...HEAD
+[0.3.1]: https://github.com/agfpd/statusline-injector/compare/v0.3.0...v0.3.1
 [0.3.0]: https://github.com/agfpd/statusline-injector/compare/v0.2.2...v0.3.0
 [0.2.2]: https://github.com/agfpd/statusline-injector/compare/v0.2.1...v0.2.2
 [0.2.1]: https://github.com/agfpd/statusline-injector/compare/v0.2.0...v0.2.1
