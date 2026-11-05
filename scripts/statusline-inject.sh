@@ -168,10 +168,13 @@ gather_codex() {
 codex_assign_limit() {
   local wm="$1" used="$2" reset="$3"
   [ -n "$used" ] || return 0
-  case "$wm" in
-    300) SL_RL5="$used"; SL_RL5_RESET="$reset" ;;
-    10080) SL_RL7="$used"; SL_RL7_RESET="$reset" ;;
-  esac
+  # Split by threshold, not exact 300/10080: survives a change of window length.
+  case "$wm" in ''|*[!0-9]*) return 0 ;; esac
+  if [ "$wm" -le 600 ]; then
+    SL_RL5="$used"; SL_RL5_RESET="$reset"
+  else
+    SL_RL7="$used"; SL_RL7_RESET="$reset"
+  fi
 }
 
 if [ "$RUNTIME" = "codex" ]; then

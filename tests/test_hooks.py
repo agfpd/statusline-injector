@@ -86,10 +86,20 @@ class Hooks(unittest.TestCase):
         self.env["CODEX_HOME"] = str(ro.parent.parent)
         self.assertIn("ctx 150k/200k", self.inject({"cwd": str(self.project)}))
 
-    def test_codex_unknown_window_is_not_mislabeled(self):
+    def test_codex_nonstandard_window_split_by_threshold(self):
+        # <=600 min -> 5h, longer -> 7d: robust if Codex changes window lengths.
+        for w5, w7 in [(60, 43200), (600, 601), (300, 10080)]:
+            with self.subTest(w5=w5, w7=w7):
+                ro = self.rollout([self.token(limits={"primary": {
+                    "window_minutes": w7, "used_percent": 71}, "secondary": {
+                    "window_minutes": w5, "used_percent": 93}})])
+                line = self.inject({"transcript_path": str(ro)})
+                self.assertIn("5h 93%", line)
+                self.assertIn("7d 71%", line)
+
+    def test_codex_non_numeric_window_ignored(self):
         ro = self.rollout([self.token(limits={"primary": {
-            "window_minutes": 60, "used_percent": 99}, "secondary": {
-            "window_minutes": 43200, "used_percent": 99}})])
+            "window_minutes": "x", "used_percent": 99}})])
         line = self.inject({"transcript_path": str(ro)})
         self.assertNotIn("5h ", line)
         self.assertNotIn("7d ", line)
