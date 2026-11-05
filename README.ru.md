@@ -66,22 +66,32 @@ Claude инжектнутый контекст копится в транскр�
 
 ## Установка
 
-Распространяется через marketplace `agfpd`. Установка plug-and-play — без ручных
-шагов и пост-установочной возни.
+Этот публичный репозиторий одновременно служит marketplace плагина. Аккаунт
+GitHub и доступ к приватному каталогу флота не нужны. Установка plug-and-play —
+без ручного подключения после установки.
 
 **Claude Code** (project scope):
 
 ```sh
-claude plugin marketplace update agfpd
-claude plugin install statusline-injector@agfpd --scope project
+claude plugin marketplace add https://github.com/agfpd/statusline-injector.git
+claude plugin install statusline-injector@statusline-injector --scope project
 ```
 
 **Codex CLI** (глобально — Codex применяет плагины на весь хост):
 
 ```sh
-codex plugin marketplace upgrade agfpd
-codex plugin add statusline-injector@agfpd
+codex plugin marketplace add https://github.com/agfpd/statusline-injector.git
+codex plugin add statusline-injector@statusline-injector
 ```
+
+Публичный каталог закрепляет выпущенную версию, а не разработческую `main`.
+Для обновления сначала обновите каталог (`claude plugin marketplace update
+statusline-injector` или `codex plugin marketplace upgrade statusline-injector`),
+затем выполните `claude plugin update statusline-injector@statusline-injector`
+или повторите `codex plugin add statusline-injector@statusline-injector`
+и перезапустите сессию. Флотские установки `statusline-injector@agfpd`
+поддерживаются по-прежнему; используйте один каталог на установку, чтобы
+хуки не дублировались.
 
 **OpenCode** (как агентский рантайм [iapeer](https://github.com/agfpd/iapeer);
 нужны iapeer ≥ 0.4.117 и `node` в `PATH`):
@@ -99,7 +109,9 @@ capability iapeer. После этого iapeer провижинит все су
 Подробности — в [`opencode/README.md`](opencode/README.md).
 
 Перезапустите сессию (или `/reload-plugins` в интерактивном Claude Code) — и
-строка начнёт появляться на каждом ходу. Project scope удобен для пробы: если
+строка начнёт появляться на каждом ходу. Если Codex просит проверить хуки
+плагина, проверьте и подтвердите их; после обновления запрос может повториться.
+Project scope удобен для пробы: если
 передумали, скилл [`statusline-uninstall`](#удаление) откатит весь цикл — он
 трогает только строку-команду `statusLine`.
 
@@ -196,6 +208,12 @@ python3 -m unittest discover -s tests -v
 обёртки, удаление и атомарное обновление. Для живой проверки используйте отдельный
 проект и интерактивные сессии Claude/Codex; проверяйте инжектируемую строку на
 втором ходу, когда уже доступны данные расхода.
+
+Публичные каталоги (`.claude-plugin/marketplace.json` и
+`.agents/plugins/marketplace.json`) намеренно закрепляют один опубликованный тег
+и SHA коммита. После публикации релиза обновите `version`, `source.ref` и
+`source.sha` в обоих каталогах отдельным коммитом. Тег должен существовать до
+обновления каталогов; самоссылка на SHA содержащего каталог коммита не нужна.
 
 ## Лицензия
 

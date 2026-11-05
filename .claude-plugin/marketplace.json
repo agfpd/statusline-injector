@@ -1,0 +1,20 @@
+{
+  "name": "statusline-injector",
+  "description": "Public marketplace for the released Statusline Injector plugin.",
+  "owner": {
+    "name": "agfpd"
+  },
+  "plugins": [
+    {
+      "name": "statusline-injector",
+      "description": "Inject live time, subscription limits and context occupancy into every turn.",
+      "source": {
+        "source": "url",
+        "url": "https://github.com/agfpd/statusline-injector.git",
+        "ref": "v0.3.1",
+        "sha": "b2d32ebc6562d66909d7208dfc0f3bf0784a6f54"
+      },
+      "version": "0.3.1"
+    }
+  ]
+}

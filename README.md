@@ -69,22 +69,31 @@ the model.
 
 ## Install
 
-Distributed through the `agfpd` plugin marketplace. Installation is
-plug-and-play — no manual steps, no post-install wiring.
+This public repository is also a plugin marketplace. No GitHub account or
+access to the private fleet marketplace is needed. Installation is
+plug-and-play — no manual wiring after install.
 
 **Claude Code** (project scope):
 
 ```sh
-claude plugin marketplace update agfpd
-claude plugin install statusline-injector@agfpd --scope project
+claude plugin marketplace add https://github.com/agfpd/statusline-injector.git
+claude plugin install statusline-injector@statusline-injector --scope project
 ```
 
 **Codex CLI** (global — Codex applies plugins per host):
 
 ```sh
-codex plugin marketplace upgrade agfpd
-codex plugin add statusline-injector@agfpd
+codex plugin marketplace add https://github.com/agfpd/statusline-injector.git
+codex plugin add statusline-injector@statusline-injector
 ```
+
+The public catalog pins a released version, not development `main`. To update:
+refresh the marketplace (`claude plugin marketplace update statusline-injector`
+or `codex plugin marketplace upgrade statusline-injector`), then run
+`claude plugin update statusline-injector@statusline-injector` or repeat
+`codex plugin add statusline-injector@statusline-injector`, and restart.
+Existing fleet installations through `statusline-injector@agfpd` stay supported;
+use one marketplace per installation to avoid duplicate hooks.
 
 **OpenCode** (as an [iapeer](https://github.com/agfpd/iapeer) agent runtime;
 needs iapeer ≥ 0.4.117 and `node` on `PATH`):
@@ -102,7 +111,9 @@ subscription windows. Uninstall: `node statusline-injector/opencode/capability.m
 Details: [`opencode/README.md`](opencode/README.md).
 
 Restart the session (or `/reload-plugins` in interactive Claude Code) and the
-line starts appearing on every turn. Project scope keeps it easy to try: if you
+line starts appearing on every turn. If Codex asks to review plugin hooks,
+review and approve them; an update can require approval again. Project scope
+keeps it easy to try: if you
 decide against it, the [`statusline-uninstall`](#uninstall) skill reverses the
 whole loop — it touches nothing but the `statusLine` command string.
 
@@ -204,6 +215,12 @@ It covers partial transcripts, separate context/limit events, custom Codex homes
 thresholds, fail-open behavior, wrapper healing, uninstall and atomic updates.
 For live verification, use an isolated project and interactive Claude/Codex
 sessions; confirm the injected line on a second turn after usage is available.
+
+The public catalogs (`.claude-plugin/marketplace.json` and
+`.agents/plugins/marketplace.json`) intentionally pin the same published tag and
+commit SHA. After publishing a release, update both catalogs' `version`,
+`source.ref` and `source.sha` together in a follow-up commit. A tag must exist
+before the catalogs point to it; no self-referential commit SHA is needed.
 
 ## License
 

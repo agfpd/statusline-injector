@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Public Claude Code and Codex marketplace catalogs in this repository, pinned
+  to the released v0.3.1 payload. README installation no longer requires access
+  to the private fleet marketplace.
+
 ## [0.3.1] - 2026-11-05
 
 ### Fixed
